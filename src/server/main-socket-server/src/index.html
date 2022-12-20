@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Socket.IO chat</title>
+  <style>
+    body {
+      margin: 0;
+      padding-bottom: 3rem;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    #form {
+      background: rgba(0, 0, 0, 0.15);
+      padding: 0.25rem;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      height: 3rem;
+      box-sizing: border-box;
+      backdrop-filter: blur(10px);
+    }
+
+    #input {
+      border: none;
+      padding: 0 1rem;
+      flex-grow: 1;
+      border-radius: 2rem;
+      margin: 0.25rem;
+    }
+
+    #input:focus {
+      outline: none;
+    }
+
+    #form>button {
+      background: #333;
+      border: none;
+      padding: 0 1rem;
+      margin: 0.25rem;
+      border-radius: 3px;
+      outline: none;
+      color: #fff;
+    }
+
+    #messages {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    #messages>li {
+      padding: 0.5rem 1rem;
+    }
+
+    #messages>li:nth-child(odd) {
+      background: #efefef;
+    }
+  </style>
+</head>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"
+  integrity="sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.2.min.js"
+  integrity="sha256-2krYZKh//PcchRtd+H+VyyQoZ/e3EcrkxhM8ycwASPA=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"
+  integrity="sha512-dLxUelApnYxpLt6K2iomGngnHO83iUvZytA3YjDUCjT0HDOHKXnVYdf3hU4JjM8uEhxf9nD1/ey98U3t2vZ0qQ=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  $(function () {
+    var socket = io();
+    $("form").submit((e) => {
+      e.preventDefault();
+      const msg = $("#m").val();
+      console.log(msg);
+      socket.emit("chat-message", msg);
+      $("#m").val("");
+      return false;
+    });
+
+    socket.on("chat-message", (msg) => {
+      console.log("RECEIVED", msg);
+      $("#messages").append((msg));
+    });
+  })
+</script>
+<script src="../build/src/index2.js" defer></script>
+
+<body>
+  <ul id="messages"></ul>
+  <form id="form" action="">
+    <input id="m" autocomplete="off" /><button>Send</button>
+  </form>
+</body>
+
+</html>
