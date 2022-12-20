@@ -1,53 +1,66 @@
-import React, { FormEvent, useEffect, useState } from 'react'
-import io from 'socket.io-client'
+import { FormEvent, MutableRefObject, useEffect, useRef, useState } from 'react'
+import io, { Socket } from 'socket.io-client'
 
 type ChatMessage = {
-  username: string, msg: string
+  username: string, msg: string, timestamp: number
 }
 
-const socket = io()
-
 const Game = () => {
-  const [messages, setMessages] = useState<Array<ChatMessage>>([{ username: "zan", msg: "hi" }, { username: "mirsko", msg: "Hllo" }])
-  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [currentSocket, setSocket] = useState<Socket>()
+  const [messages, setMessages] = useState<Array<ChatMessage>>([{ username: "zan", msg: "hi", timestamp: 1671547043734 }, { username: "mirsko", msg: "Hllo", timestamp: 1671547043734 }])
+  const [isConnected, setIsConnected] = useState(currentSocket?.connected);
+  const messageInputRef = useRef() as MutableRefObject<HTMLInputElement>
 
   useEffect(() => {
-    socket.on('connect', () => {
+    const newSocket = io(process.env.MAIN_SERVER_HOST as string)
+    setSocket(newSocket)
+    return () => {
+      newSocket.close()
+    }
+  }, [setSocket]);
+
+  useEffect(() => {
+    currentSocket?.on('connect', () => {
       setIsConnected(true);
     });
 
-    socket.on('disconnect', () => {
+    currentSocket?.on('disconnect', () => {
       setIsConnected(false);
     });
 
-    socket.on('chat-message', (data: ChatMessage) => {
+    currentSocket?.on('chat-message', (data: ChatMessage) => {
       setMessages(prev => [...prev, data]);
     });
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('pong');
+      currentSocket?.off('connect');
+      currentSocket?.off('disconnect');
     };
-  }, []);
+  }, [currentSocket])
 
   const handleSendMessage = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const formData = new FormData(e.currentTarget)
-    const msg = formData.get("message")
+    const msgInputValue = messageInputRef.current.value
 
-    socket.emit('chat-message', {
+    const msg = {
       username: "zan",
-      msg: msg
-    });
+      msg: msgInputValue,
+      timestamp: Date.now()
+    }
+
+    setMessages(prev => [...prev, msg])
+
+    currentSocket?.emit('chat-message', msg);
+
+    messageInputRef.current.value = ""
   }
 
 
   return (
     <div className='flex flex-col gap-1 absolute right-2 bottom-2 w-60 h-80 bg-black bg-opacity-20 rounded-md p-4 text-white'>
       <div id="chatHeader">
-        <p className='font-bold'>Chat</p>
+        <p className='font-bold'>Chat <span className='font-regular text-sm'>{isConnected ? "(conected)" : "(conecting...)"}</span></p>
         < hr />
       </div>
 
@@ -60,7 +73,7 @@ const Game = () => {
       </div>
 
       <form onSubmit={handleSendMessage} id="chatMessageInput" className='flex gap-2 items-center justify-between w-full' action=''>
-        <input autoComplete='false' autoSave='false' type="text" id="usernameInput" className='w-full text-black rounded-md px-2' name="message"></input>
+        <input ref={messageInputRef} autoComplete='false' autoSave='false' type="text" id="usernameInput" className='w-full text-black rounded-md px-2' name="message"></input>
         <button type='submit' className='rounded-md m-0 px-2 text-sm h-full bg-gray-300 text-gray-800 hover:bg-green-700 hover:text-white transition-all duration-100'>SEND</button>
       </form>
     </div>
